@@ -1,0 +1,84 @@
+# 1. AUTO-INGEST GIT COMMITS (via Git Hook)
+    #!/usr/bin/env bash
+
+    API_URL="http://localhost:8000/ingest"
+
+    commit_hash=$(git rev-parse HEAD)
+    title=$(git log -1 --pretty=format:%s)
+    body=$(git log -1 --pretty=format:%b)
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    timestamp=$(date +%s%3N)
+
+    json=$(cat <<EOF
+    {
+      "type": "git_commit",
+      "title": "$title",
+      "body": "$body",
+      "branch": "$branch",
+      "commit_hash": "$commit_hash",
+      "timestamp": $timestamp
+    }
+    EOF
+    )
+
+    curl -s -X POST $API_URL \
+      -H "Content-Type: application/json" \
+      -d "$json" > /dev/null 2>&1
+
+    Make it executable:
+    chmod +x .git/hooks/post-commit
+
+# =================================================================================================
+
+# 2. AUTO-INGEST CLI COMMANDS (Global Shell Watcher)
+  
+  OPTION A — ZSH (recommended) : Add in your ~/.zshrc:
+
+      # ===============================
+      # DevCoPilot – CLI Command Logger
+      # Production-Ready Version
+      # ===============================
+
+      # Change this to your backend host when deployed:
+      API_URL="http://localhost:8000/ingest"
+
+      preexec() {
+        local cmd="$1"
+        local ts=$(($(date +%s) * 1000))   # macOS-safe millisecond timestamp
+
+        # ---------------------------
+        # Build safe JSON payload
+        # ---------------------------
+        if command -v jq >/dev/null 2>&1; then
+          payload=$(jq -n \
+            --arg type "cli_cmd" \
+            --arg title "$cmd" \
+            --argjson timestamp "$ts" \
+            '{type:$type, title:$title, timestamp:$timestamp}')
+        else
+          # Python fallback (handles all escaping safely)
+          payload=$(python3 - <<PY - "$cmd" "$ts"
+      import json, sys
+      cmd = sys.argv[1]
+      ts = int(sys.argv[2])
+      print(json.dumps({"type": "cli_cmd", "title": cmd, "timestamp": ts}))
+      PY
+      )
+        fi
+
+        # ---------------------------
+        # Send event silently
+        # ---------------------------
+        curl -s -X POST "$API_URL" \
+          -H "Content-Type: application/json" \
+          -d "$payload" >/dev/null 2>&1 &
+
+        return 0
+      }
+
+
+# ============================================================================================================
+
+
+
+

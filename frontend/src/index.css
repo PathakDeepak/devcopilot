@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+    --bg: #0f172a;
+    --card: #0b1220;
+}
+
+body{ @apply bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+/* small utility */
+.scrollbar-hide::-webkit-scrollbar{ display:none }
