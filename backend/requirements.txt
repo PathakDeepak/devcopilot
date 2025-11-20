@@ -1,7 +1,8 @@
 fastapi
 uvicorn
 qdrant-client==1.7.3
-sentence-transformers
+sentence-transformers>=2.2.2
 pydantic
 python-dotenv
 requests
+torch>=2.1.0    # CPU build; if you have a GPU, use the appropriate cuda wheel
