@@ -1,61 +1,84 @@
 # 🚀 DevCoPilot — Your Personal Developer Memory Co-Pilot
-A local, privacy-focused developer assistant that **remembers everything you do**:
 
-- Every **Git commit**
-- Every **terminal/CLI command**
-- Any **manual API event**
-- Fully **searchable with embeddings**
-- Beautiful **timeline dashboard**
-- No cloud, no AWS, no vendor lock-in
-- Built with **Python + FastAPI + Qdrant + React**
+DevCoPilot is a **local, privacy-first development memory system** that automatically captures:
 
-This is your **personal development memory system** — a complete history of how you solved problems, tracked over time, and searchable in natural language.
+- 🟩 Every **CLI command**
+- 🟩 Every **Git commit**
+- 🟩 Manual API events or logs
+- 🟩 Embedding-based semantic search
+- 🟩 Diff Analyzer (compare any two events)
+- 🟩 Beautiful React dashboard
+
+No cloud.  
+No AWS.  
+No telemetry.  
+Everything runs **fully offline** on your machine.
 
 ---
 
 ## 🌟 Features
 
-### 🔥 Full Development Memory  
-DevCoPilot automatically captures:
+### 🔥 Full Development Memory
 
 | Source | Captured? | Details |
 |--------|-----------|---------|
-| 🟩 Git commits | ✔ Yes | Commit message, body, branch, hash, timestamp |
-| 🟩 Terminal commands | ✔ Yes | Every CLI command you run, safely JSON escaped |
-| 🟩 Manual API events | ✔ Yes | Any text you send via `/ingest` |
+| 🟩 Git commits | ✔ Yes | Message, body, branch, hash, timestamp |
+| 🟩 Terminal commands | ✔ Yes | Every CLI command you run |
+| 🟩 API events | ✔ Yes | Anything you choose to ingest manually |
 | 🟩 Embeddings | ✔ Yes | Local MiniLM embeddings |
-| 🟩 Vector search | ✔ Yes | Qdrant local database |
+| 🟩 Vector DB | ✔ Yes | Qdrant local database |
 
 ---
 
 ## 🔍 Semantic Search
-Ask questions in natural language:
 
-- “When did I fix redis cache bug?”
-- “Find commits related to hello world”
+Ask natural-language queries:
+
+- “When did I fix the redis cache bug?”
+- “Find all ‘hello world’ commits”
 - “Show docker commands from last week”
-- “Search CLI commands about postgres issues”
+- “Search for OAuth debugging commands”
 
-Powered by:
+Includes:
 
-- SentenceTransformers embeddings  
-- Qdrant vector similarity  
+- Embedding similarity  
 - Score threshold slider  
-- Type/date filters  
+- Type filters  
+- Date filters  
+- Score histogram visualization  
 
 ---
 
-## 📊 Beautiful Dashboard
+## 🆕 Diff Analyzer — Compare Any Two Events
 
-The React UI includes:
+Compare:
 
-- 🔎 Search
-- 🧭 Timeline
-- 📁 Event Drawer
-- 📊 Score Histogram
-- 🎚 Similarity Threshold Slider
-- 🎛 Filters
-- 🧮 Activity Summary Cards
+- two commits  
+- two CLI commands  
+- a CLI command vs a commit  
+- API responses  
+- any two stored events  
+
+Features:
+
+- Unified diff view  
+- Color-coded (+ green / - red / @@ yellow)  
+- Structured metadata  
+- Optional AI explanation (LLM optional, disabled by default)  
+- Smooth React Compare Drawer  
+
+---
+
+## 📊 Beautiful Dashboard (React + Tailwind + Recharts)
+
+- 🔎 Search bar  
+- 🧭 Timeline  
+- 📁 Event Drawer  
+- 🎚 Score Threshold Slider  
+- 📊 Score Histogram  
+- 🧮 Summary cards  
+- 🔀 Compare button  
+- 🧩 Compare Drawer with diff viewer  
 
 Open:
 
@@ -65,61 +88,66 @@ http://localhost:3000
 
 ---
 
-## 🐳 Docker Setup
+## 🐳 Docker Setup (Production Mode)
 
-Start everything:
+Start all services:
 
 ```
 docker-compose up --build -d
 ```
 
-Services:
+### Services
 
 | Service | Port | Description |
 |---------|------|-------------|
-| Backend | 8000 | FastAPI ingestion & search |
-| Frontend | 3000 | React dashboard |
-| Qdrant | 6333 | Local vector DB |
+| Qdrant | 6333 | Vector database |
+| Backend | 8000 | FastAPI ingest/search/compare |
+| Frontend | 3000 | NGINX + React app |
 
-Qdrant UI:
-
-```
+Qdrant Dashboard:  
 http://localhost:6333/dashboard
-```
 
 ---
 
 ## 🧠 Architecture
 
 ```
-Terminal / Git Hooks → FastAPI → Embeddings → Qdrant → React Dashboard
+Terminal / Git Hook
+        ↓
+FastAPI Backend (Ingest/Embed/Search/Compare)
+        ↓
+Qdrant Vector DB
+        ↓
+React + NGINX UI (Timeline / Diff / Insights)
 ```
 
 ---
 
-## 📦 Project Structure
+## 📁 Project Structure
 
 ```
 devcopilot/
  ├── backend/
- │    ├── app/
- │    ├── requirements.txt
- │    ├── Dockerfile
+ │   ├── app/
+ │   ├── requirements.txt
+ │   ├── Dockerfile
+ │
  ├── frontend/
- │    ├── src/
- │    ├── package.json
- │    ├── Dockerfile
+ │   ├── src/
+ │   ├── nginx.conf
+ │   ├── default.conf
+ │   ├── Dockerfile
+ │
  ├── docker-compose.yml
- ├── .env.example
  ├── .gitignore
  └── README.md
 ```
 
 ---
 
-## ⚙️ Ingesting Data
+## ⚙️ API Usage
 
-### Manual Ingest
+### Ingest event
 
 ```bash
 curl -X POST http://localhost:8000/ingest   -H "Content-Type: application/json"   -d '{"type":"git_commit","title":"fix redis","body":"updated TTL"}'
@@ -131,11 +159,17 @@ curl -X POST http://localhost:8000/ingest   -H "Content-Type: application/json" 
 curl -X POST http://localhost:8000/search   -H "Content-Type: application/json"   -d '{"query":"redis fix","top_k":10}'
 ```
 
+### Compare two events
+
+```bash
+curl "http://localhost:8000/compare?id1=<id1>&id2=<id2>"
+```
+
 ---
 
-## 🔄 Auto-Ingestion Hooks
+## 🔄 Auto-Ingestion
 
-### 🐚 Terminal Hook (ZSH Production)
+### 1️⃣ Terminal Hook (ZSH)
 
 Add to `~/.zshrc`:
 
@@ -146,17 +180,13 @@ preexec() {
   local cmd="$1"
   local ts=$(($(date +%s) * 1000))
 
-  if command -v jq >/dev/null 2>&1; then
-    payload=$(jq -n       --arg type "cli_cmd"       --arg title "$cmd"       --argjson timestamp "$ts"       '{type:$type, title:$title, timestamp:$timestamp}')
-  else
-    payload=$(python3 - <<PY - "$cmd" "$ts"
-import json, sys
-print(json.dumps({"type":"cli_cmd","title":sys.argv[1], "timestamp":int(sys.argv[2])}))
+  payload=$(python3 - <<PY - "$cmd" "$ts"
+import json,sys
+print(json.dumps({"type":"cli_cmd","title":sys.argv[1],"timestamp":int(sys.argv[2])}))
 PY
 )
-  fi
 
-  curl -s -X POST "$API_URL"     -H "Content-Type: application/json"     -d "$payload" >/dev/null 2>&1 &
+  curl -s -X POST "$API_URL"        -H "Content-Type: application/json"        -d "$payload" >/dev/null 2>&1 &
 }
 ```
 
@@ -168,9 +198,9 @@ source ~/.zshrc
 
 ---
 
-### 🔧 Git Hook (post-commit)
+### 2️⃣ Git Hook (post-commit)
 
-`.git/hooks/post-commit`:
+Create `.git/hooks/post-commit`:
 
 ```bash
 #!/usr/bin/env bash
@@ -192,19 +222,20 @@ payload=$(printf '{
   "timestamp":%d
 }' "$title" "$body" "$branch" "$commit_hash" "$timestamp")
 
-curl -s -X POST "$API_URL"   -H "Content-Type: application/json"   -d "$payload" >/dev/null 2>&1 &
+curl -s -X POST "$API_URL"      -H "Content-Type: application/json"      -d "$payload" >/dev/null 2>&1 &
 ```
 
 ---
 
 ## 🧡 Roadmap
 
-- [ ] Weekly AI summaries  
-- [ ] Compare two events (diff + LLM explanation)  
-- [ ] Automatic secret redaction  
-- [ ] VSCode plugin  
+- [x] Diff Analyzer (compare any two events)
+- [ ] Weekly LLM summary  
+- [ ] Better CLI classifier  
+- [ ] Secret/credential redaction  
+- [ ] VSCode extension  
 - [ ] Project tagging  
-- [ ] Daily activity report  
+- [ ] Higher-precision embedding models (MPNET / E5)  
 
 ---
 
@@ -214,11 +245,6 @@ MIT License.
 
 ---
 
-## 🤝 Contributing
+## ⭐ Support
 
-Issues and PRs are welcome!
-
----
-
-## ⭐ If you like this project  
-Give it a star ⭐ on GitHub!  
+If this project helps you, please ⭐ star it on GitHub!

@@ -16,3 +16,8 @@ export async function fetchEvent(id){
     const res = await axios.get(`${API_BASE}/event/${id}`)
     return res.data
 }
+
+export async function fetchDiff(id1, id2) {
+  const res = await fetch(`/compare?id1=${id1}&id2=${id2}`);
+  return await res.json();
+}

@@ -1,74 +1,116 @@
-import React, { useState } from 'react'
-import SearchBar from '../components/SearchBar'
-import Timeline from '../components/Timeline'
-import EventDrawer from '../components/EventDrawer'
-import { semanticSearch, fetchEvent } from '../api'
-import { motion } from 'framer-motion'
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 
-import ScoreHistogram from "../components/ScoreHistogram"
-import ScoreThresholdSlider from "../components/ScoreThresholdSlider"
+import SearchBar from "../components/SearchBar";
+import Timeline from "../components/Timeline";
+import EventDrawer from "../components/EventDrawer";
+import ScoreHistogram from "../components/ScoreHistogram";
+import ScoreThresholdSlider from "../components/ScoreThresholdSlider";
+import CompareDrawer from "../components/CompareDrawer";
 
-export default function Home(){
-  const [results, setResults] = useState([])   // <-- IMPORTANT: in scope
-  const [selected, setSelected] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [minScore, setMinScore] = useState(0.30);
+import { semanticSearch, fetchEvent } from "../api";
 
-  async function onSearch(q){
-    setLoading(true)
-    try{
-      const data = await semanticSearch(q, 20, minScore)
-      setResults(data)
-    }catch(e){
-      console.error(e)
-    }finally{
-      setLoading(false)
-    }
-  }
+export default function Home() {
+  const [results, setResults] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [minScore, setMinScore] = useState(0.3);
 
-  async function openEvent(id){
+  // Compare states
+  const [compareIds, setCompareIds] = useState([]);
+  const [compareData, setCompareData] = useState(null);
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  // ----------------------------
+  // SEARCH
+  // ----------------------------
+  async function onSearch(q) {
+    setLoading(true);
     try {
-      const e = await fetchEvent(id)
-      setSelected(e)
+      const data = await semanticSearch(q, 20, minScore);
+      setResults(data);
     } catch (err) {
-      console.error(err)
+      console.error("Search error:", err);
+    } finally {
+      setLoading(false);
     }
   }
 
+  // ----------------------------
+  // OPEN EVENT DETAILS
+  // ----------------------------
+  async function openEvent(id) {
+    try {
+      const e = await fetchEvent(id);
+      setSelected(e);
+    } catch (err) {
+      console.error("Fetch event error:", err);
+    }
+  }
+
+  // ----------------------------
+  // START COMPARE
+  // ----------------------------
+  function startCompare(id) {
+    setCompareIds((prev) => {
+      if (prev.length === 1 && prev[0] !== id) {
+        // We have 2 events → fetch diff now
+        fetchDiff(prev[0], id);
+        return [];
+      }
+      return [id]; // store first selected event
+    });
+  }
+
+  // ----------------------------
+  // FETCH DIFF RESULTS
+  // ----------------------------
+  async function fetchDiff(id1, id2) {
+    try {
+      const res = await fetch(`/compare?id1=${id1}&id2=${id2}`);
+      const data = await res.json();
+      setCompareData(data);
+      setCompareOpen(true);
+    } catch (err) {
+      console.error("Diff fetch error:", err);
+    }
+  }
+
+  // ----------------------------
+  // UI
+  // ----------------------------
   return (
     <div className="grid grid-cols-12 gap-6">
 
-      {/* LEFT SECTION: Search + Timeline */}
+      {/* ========== LEFT PANEL ========== */}
       <div className="col-span-8">
 
-        {/* Search bar section */}
+        {/* Search */}
         <motion.div
-          initial={{opacity:0, y:8}}
-          animate={{opacity:1,y:0}}
-          transition={{delay:0.05}}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
         >
           <SearchBar onSearch={onSearch} loading={loading} />
         </motion.div>
 
         {/* Timeline */}
-        <motion.div
-          className="mt-6"
-          initial={{opacity:0}}
-          animate={{opacity:1}}
-        >
-          <Timeline results={results} onOpen={openEvent} />
+        <motion.div className="mt-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <Timeline
+            results={results}
+            onOpen={openEvent}
+            onCompare={startCompare}   // <-- ⭐ NEW
+          />
         </motion.div>
       </div>
 
-      {/* RIGHT SECTION: Stats + Filters */}
+      {/* ========== RIGHT PANEL ========== */}
       <div className="col-span-4">
 
         {/* Activity Summary */}
         <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl shadow-lg">
           <h3 className="text-lg font-semibold">Activity Summary</h3>
-          <p className="mt-2 text-sm text-slate-300">
-            Quick insights based on your search.
-          </p>
+          <p className="mt-2 text-sm text-slate-300">Quick insights based on your search.</p>
 
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between text-sm text-slate-300">
@@ -79,13 +121,13 @@ export default function Home(){
             <div className="flex items-center justify-between text-sm text-slate-300">
               <span>Top score</span>
               <span className="font-medium">
-                {results[0]?.score?.toFixed(3) ?? '-'}
+                {results[0]?.score?.toFixed(3) ?? "-"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Filters Card */}
+        {/* Filters */}
         <div className="mt-6 p-4 bg-gradient-to-br from-slate-800/60 to-slate-700/40 rounded-2xl shadow-inner">
           <h4 className="text-sm text-slate-300 mb-2">Filters</h4>
 
@@ -104,20 +146,22 @@ export default function Home(){
           </div>
         </div>
 
-        {/* ⭐ SCORE THRESHOLD SLIDER ⭐ */}
+        {/* Score Threshold Slider */}
         <ScoreThresholdSlider value={minScore} onChange={setMinScore} />
 
-
-        {/* ScoreHistogram Summary */}
+        {/* Histogram */}
         <ScoreHistogram results={results} minScore={minScore} />
-
       </div>
 
       {/* Event Drawer */}
-      <EventDrawer
-        selected={selected}
-        onClose={() => setSelected(null)}
+      <EventDrawer selected={selected} onClose={() => setSelected(null)} />
+
+      {/* Compare Drawer */}
+      <CompareDrawer
+        open={compareOpen}
+        data={compareData}
+        onClose={() => setCompareOpen(false)}
       />
     </div>
-  )
+  );
 }

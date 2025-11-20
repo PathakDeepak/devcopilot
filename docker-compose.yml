@@ -12,7 +12,9 @@ services:
       - qdrant_data:/qdrant/storage
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: devcopilot-backend
     restart: always
     ports:
@@ -24,11 +26,13 @@ services:
       - qdrant
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: devcopilot-frontend
     restart: always
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
       - backend
 

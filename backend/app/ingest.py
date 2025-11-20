@@ -36,8 +36,9 @@ def ingest_event(event):
         "type": event.type,
         "title": event.title,
         "body": event.body,
-        "timestamp": int(time.time() * 1000),
+        #"timestamp": int(time.time() * 1000),
         "raw_text": combined_text,
+        "timestamp": int(time.time() * 1000),
     }
 
     # --- Create point ---
